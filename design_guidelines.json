@@ -1,0 +1,122 @@
+{
+  "project_name": "Digital Invitation SaaS Platform (Indonesia-First)",
+  "theme": "light",
+  "typography": {
+    "dashboard": {
+      "headings": "Manrope",
+      "body": "Figtree"
+    },
+    "invitations": {
+      "wedding_headings": "Cormorant Garamond",
+      "corporate_headings": "Cabinet Grotesk",
+      "body": "Manrope"
+    },
+    "rules": [
+      "Use tracking-tight for headings > 32px.",
+      "Overlines / Labels MUST be Uppercase + Tiny + Wide Spacing (tracking-[0.2em]).",
+      "No generic sans (Inter/Roboto) for headings. Use defined fonts.",
+      "The jump between a heading and its subheading must not exceed 2 Tailwind steps."
+    ]
+  },
+  "colors": {
+    "archetype": "Organic & Earthy (Trust, Growth, Calm)",
+    "palette": {
+      "primary": "#C05C46",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#4A5D4E",
+      "secondary_foreground": "#FFFFFF",
+      "background": "#F9F8F6",
+      "surface": "#FFFFFF",
+      "border": "#E2DFD9",
+      "text": "#1A1A1A",
+      "text_muted": "#737373",
+      "accent_gold": "#D4AF37",
+      "whatsapp_green": "#25D366"
+    },
+    "rules": [
+      "No pure black or white for backgrounds. Always tint with warm hues.",
+      "High contrast for interactive elements.",
+      "Use Terracotta as primary CTA color sparingly. Use WhatsApp green specifically for send/share actions.",
+      "Use Accent Gold for elegant wedding template highlights."
+    ]
+  },
+  "layouts": {
+    "marketing": "The Bento Grid Protocol - Tetris Grid. Asymmetric. Generous padding (p-12 to p-24).",
+    "dashboard": "High Density Grid for RSVP analytics. Strict hierarchy. Cardless or 1px subtle borders (border-border).",
+    "editor": "Two-column split: Left side form controls (Shadcn forms/tabs), Right side sticky mobile preview (iframe-style phone mockup).",
+    "guest_facing": "Mobile-first, full vertical scrolling with scroll-triggered animations. Background music player fixed at bottom right."
+  },
+  "components": {
+    "strategy": "Shadcn UI heavily customized with Organic earthy palette for the Dashboard. Custom DOM/HTML for Marketing and Public Invitation pages.",
+    "required_libraries": [
+      "lucide-react",
+      "framer-motion",
+      "recharts",
+      "sonner"
+    ],
+    "shadcn_components": [
+      "accordion", 
+      "dialog", 
+      "dropdown-menu", 
+      "table", 
+      "chart", 
+      "tabs", 
+      "form", 
+      "input", 
+      "button"
+    ]
+  },
+  "visual_enhancers": [
+    "Glassmorphism (The 'Crystal' Variant) for landing page sticky headers: bg-white/70 backdrop-blur-xl border-white/40 border-b.",
+    "Subtle grain/noise overlays for the wedding templates to feel like physical textured paper.",
+    "Framer Motion for scroll-triggered entrance animations on landing page and guest invitation pages.",
+    "Custom scrollbars; NO gutter."
+  ],
+  "accessibility": [
+    "Ensure contrast ratios meet APCA standards.",
+    "Add data-testid to all interactive and key informational elements (e.g., data-testid='create-event-btn').",
+    "Hover state must be a lighter hue of ACTIVE state color."
+  ],
+  "media": {
+    "rules": [
+      "Images MUST NOT exceed 80vh on mobile devices.",
+      "Hero image overlays max bg-black/30 for dark, bg-white/30 for light."
+    ],
+    "image_urls": {
+      "landing_hero": "https://images.unsplash.com/photo-1670529776180-60e4132ab90c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHwxfHxiZWF1dGlmdWwlMjB3ZWRkaW5nJTIwdmVudWV8ZW58MHx8fHwxNzg3NjQzMjk0fDA&ixlib=rb-4.1.0&q=85",
+      "wedding_templates": [
+        "https://images.unsplash.com/photo-1650377509488-724221735c19?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwzfHxpbmRvbmVzaWFuJTIwd2VkZGluZyUyMGNvdXBsZXxlbnwwfHx8fDE3ODc2NDMyODN8MA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1650377509454-1bbd8392e122?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxpbmRvbmVzaWFuJTIwd2VkZGluZyUyMGNvdXBsZXxlbnwwfHx8fDE3ODc2NDMyODN8MA&ixlib=rb-4.1.0&q=85",
+        "https://images.pexels.com/photos/32346176/pexels-photo-32346176.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      ],
+      "floral_backgrounds": [
+        "https://images.unsplash.com/photo-1543157145-f78c636d023d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwxfHxib3RhbmljYWwlMjBmbG9yYWwlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4NzY0MzI4OHww&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1612538946893-033c6bb7060c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwzfHxib3RhbmljYWwlMjBmbG9yYWwlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4NzY0MzI4OHww&ixlib=rb-4.1.0&q=85"
+      ]
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build standard SaaS dashboard using Shadcn customized with 'Organic & Earthy' theme. Ensure 1px subtle borders (border-border), avoid overly soft card shadows.",
+    "For the Landing page, implement a premium asymmetric Bento grid and Crystal Glassmorphism header. Use Framer Motion for scroll effects.",
+    "The Event Editor should feature a left-side form (accordion/tabs) and a right-side sticky Mobile Preview iframe-like container.",
+    "Implement an elegant RSVP dashboard utilizing Recharts for attendance metrics (pie/bar).",
+    "Use data-testid on every interactive UI component.",
+    "Create 3 distinct template views for the guest-facing pages using the provided typography and floral/wedding background images.",
+    "Write code for .js (.jsx) files rather than .tsx, ensuring standard React structural conventions.",
+    "Make sure the WhatsApp delivery UI is mocked cleanly but prominently.",
+    "Implement a mock Xendit payment flow before the 'publish' status is granted."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Use sonner for toasts."
+  ]
+}
