@@ -243,6 +243,14 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
 # ------------------------------ Templates ------------------------------------
 TEMPLATES = [
     {
+        "template_id": "anselma-heritage",
+        "name": "Anselma Heritage",
+        "category": "wedding",
+        "tier": "paid",
+        "cover": "https://images.unsplash.com/photo-1543157145-f78c636d023d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwxfHxib3RhbmljYWwlMjBmbG9yYWwlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc4NzY0MzI4OHww&ixlib=rb-4.1.0&q=85",
+        "theme": {"primary": "#8a6a3a", "accent": "#c9a961", "bg": "#f4ecdd", "font_heading": "Cormorant Garamond"},
+    },
+    {
         "template_id": "elegant-rose",
         "name": "Elegant Rose",
         "category": "wedding",
@@ -304,16 +312,41 @@ async def list_templates(category: Optional[str] = None):
 def default_config(event_type: str) -> dict:
     if event_type == "wedding":
         return {
-            "bride_name": "Andi",
-            "groom_name": "Rina",
+            "bride_name": "Agnes",
+            "groom_name": "Abraham",
+            "hashtag": "#ABeginningOfLove",
+            "verse_text": "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.",
+            "verse_ref": "Jeremiah 29:11",
+            "bride_full_name": "Agnes Arimbi Ayuwanti",
+            "groom_full_name": "Paskah Abraham Alvyanto",
+            "bride_parents": "Mr. Prof. Dr. Jati Batoro & Mrs. Sri Suwanti",
+            "groom_parents": "Mr. Antonius Yuwono & Mrs. Evy Christina",
+            "bride_instagram": "",
+            "groom_instagram": "",
+            "bride_photo": "",
+            "groom_photo": "",
             "event_date": "2026-06-15",
             "event_time": "10:00",
-            "venue": "Bali, Indonesia",
-            "venue_address": "Jl. Melati No. 12, Denpasar",
-            "story": "Kami mengundang Bapak/Ibu/Saudara/i untuk hadir dalam acara pernikahan kami.",
+            "venue": "Malang, Indonesia",
+            "venue_address": "",
+            "story": "Dengan penuh syukur atas berkat Tuhan, kami mengundang Bapak/Ibu/Saudara/i untuk hadir dalam acara pernikahan kami.",
+            "love_story": [
+                {"title": "First Meet", "date": "2021", "description": "It all began through a simple hello — two hearts met in the most ordinary way.", "photo": ""},
+                {"title": "The Journey", "date": "2022 - 2024", "description": "Through the years, we learned love is about patience, forgiveness, and choosing each other again.", "photo": ""},
+                {"title": "Forever Begins", "date": "2026", "description": "Now, after beautiful years, we step into a new beginning — guided by grace.", "photo": ""},
+            ],
             "gallery": [],
             "music_url": "",
             "video_url": "",
+            "events": [
+                {"name": "Akad Nikah", "date": "2026-06-15", "time_start": "10:00", "time_end": "12:00", "venue": "Grand Ballroom", "address": "Jl. Contoh No. 1, Malang", "maps_url": ""},
+                {"name": "Resepsi", "date": "2026-06-15", "time_start": "19:00", "time_end": "21:00", "venue": "Grand Ballroom", "address": "Jl. Contoh No. 1, Malang", "maps_url": ""},
+            ],
+            "banks": [
+                {"bank": "BCA", "account_number": "1234567890", "account_name": "Agnes Arimbi"},
+            ],
+            "show_gift": True,
+            "show_wishes": True,
         }
     if event_type == "aqiqah":
         return {
@@ -404,6 +437,8 @@ async def delete_event(event_id: str, session_token: Optional[str] = Cookie(None
     user = await get_current_user(session_token=session_token, authorization=authorization)
     r = await db.events.delete_one({"event_id": event_id, "user_id": user["user_id"]})
     await db.guests.delete_many({"event_id": event_id})
+    await db.wishes.delete_many({"event_id": event_id})
+    await db.payments.delete_many({"event_id": event_id})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Event not found")
     return {"ok": True}
@@ -527,6 +562,55 @@ async def rsvp_summary(event_id: str,
         if g["rsvp_status"] == "attending":
             counts["total_headcount"] += g.get("guest_count", 1)
     return {"summary": counts, "guests": guests}
+
+
+# ------------------------------ Wishes / Guestbook ---------------------------
+class WishSubmit(BaseModel):
+    name: str
+    message: str
+    attending: Optional[str] = None  # attending | not_attending | maybe
+
+
+@api_router.post("/public/inv/{slug}/wishes")
+async def submit_wish(slug: str, payload: WishSubmit):
+    event = await db.events.find_one({"slug": slug}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    name = (payload.name or "").strip()[:80]
+    message = (payload.message or "").strip()[:600]
+    if not name or not message:
+        raise HTTPException(status_code=400, detail="name and message required")
+    doc = {
+        "wish_id": f"w_{uuid.uuid4().hex[:10]}",
+        "event_id": event["event_id"],
+        "name": name,
+        "message": message,
+        "attending": payload.attending if payload.attending in ("attending", "not_attending", "maybe") else None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.wishes.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/public/inv/{slug}/wishes")
+async def list_wishes(slug: str, limit: int = 100):
+    event = await db.events.find_one({"slug": slug}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    wishes = await db.wishes.find({"event_id": event["event_id"]}, {"_id": 0}).sort("created_at", -1).to_list(min(limit, 500))
+    return wishes
+
+
+@api_router.get("/events/{event_id}/wishes")
+async def list_wishes_owner(event_id: str,
+                             session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
+    user = await get_current_user(session_token=session_token, authorization=authorization)
+    event = await db.events.find_one({"event_id": event_id, "user_id": user["user_id"]}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    wishes = await db.wishes.find({"event_id": event_id}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return wishes
 
 
 # ------------------------------ Payment (Xendit MOCK) ------------------------

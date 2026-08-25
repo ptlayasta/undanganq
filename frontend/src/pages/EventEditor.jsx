@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import InvitationRenderer from "@/components/app/InvitationRenderer";
-import { Save, Users, Rocket, Image as ImageIcon, Music, X } from "lucide-react";
+import { Save, Users, Rocket, Image as ImageIcon, Music, X, Plus, Trash2 } from "lucide-react";
 
 export default function EventEditor() {
   const { eventId } = useParams();
@@ -20,12 +20,13 @@ export default function EventEditor() {
   const [config, setConfig] = useState({});
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileRef = useRef();
+  const galleryRef = useRef();
   const musicRef = useRef();
+  const bridePhotoRef = useRef();
+  const groomPhotoRef = useRef();
+  const storyPhotoRef = useRef({});
 
-  useEffect(() => {
-    if (!loading && !user) navigate("/", { replace: true });
-  }, [loading, user, navigate]);
+  useEffect(() => { if (!loading && !user) navigate("/", { replace: true }); }, [loading, user, navigate]);
 
   useEffect(() => {
     (async () => {
@@ -34,10 +35,7 @@ export default function EventEditor() {
         setEvent(e.data);
         setConfig(e.data.config || {});
         setTemplates(t.data);
-      } catch {
-        toast.error("Undangan tidak ditemukan");
-        navigate("/dashboard");
-      }
+      } catch { toast.error("Undangan tidak ditemukan"); navigate("/dashboard"); }
     })();
   }, [eventId, navigate]);
 
@@ -49,11 +47,7 @@ export default function EventEditor() {
       const { data } = await apiClient.patch(`/events/${eventId}`, { config });
       setEvent(data);
       toast.success("Perubahan disimpan");
-    } catch {
-      toast.error("Gagal menyimpan");
-    } finally {
-      setSaving(false);
-    }
+    } catch { toast.error("Gagal menyimpan"); } finally { setSaving(false); }
   };
 
   const changeTemplate = async (template_id) => {
@@ -61,12 +55,10 @@ export default function EventEditor() {
       const { data } = await apiClient.patch(`/events/${eventId}`, { template_id });
       setEvent(data);
       toast.success("Template diperbarui");
-    } catch {
-      toast.error("Gagal");
-    }
+    } catch { toast.error("Gagal"); }
   };
 
-  const upload = async (file, kind) => {
+  const uploadTo = async (file, cb) => {
     if (!file) return;
     setUploading(true);
     try {
@@ -74,22 +66,29 @@ export default function EventEditor() {
       fd.append("file", file);
       const { data } = await apiClient.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
       const url = `${API}/files/${data.file_id}`;
-      if (kind === "gallery") set("gallery", [...(config.gallery || []), url]);
-      else if (kind === "music") set("music_url", url);
+      cb(url);
       toast.success("Berhasil upload");
-    } catch {
-      toast.error("Upload gagal");
-    } finally {
-      setUploading(false);
-    }
+    } catch { toast.error("Upload gagal"); } finally { setUploading(false); }
   };
 
   const template = useMemo(() => templates.find((t) => t.template_id === event?.template_id), [templates, event]);
-
   if (!event) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-[#c05c46] border-t-transparent rounded-full animate-spin" /></div>;
 
   const isWedding = event.event_type === "wedding";
   const isAqiqah = event.event_type === "aqiqah";
+
+  // Helpers for arrays
+  const addLoveStory = () => set("love_story", [...(config.love_story || []), { title: "", date: "", description: "", photo: "" }]);
+  const updLoveStory = (i, k, v) => set("love_story", config.love_story.map((x, j) => j === i ? { ...x, [k]: v } : x));
+  const delLoveStory = (i) => set("love_story", config.love_story.filter((_, j) => j !== i));
+
+  const addEvent = () => set("events", [...(config.events || []), { name: "", date: "", time_start: "", time_end: "", venue: "", address: "", maps_url: "" }]);
+  const updEvent = (i, k, v) => set("events", config.events.map((x, j) => j === i ? { ...x, [k]: v } : x));
+  const delEvent = (i) => set("events", config.events.filter((_, j) => j !== i));
+
+  const addBank = () => set("banks", [...(config.banks || []), { bank: "", account_number: "", account_name: "" }]);
+  const updBank = (i, k, v) => set("banks", config.banks.map((x, j) => j === i ? { ...x, [k]: v } : x));
+  const delBank = (i) => set("banks", config.banks.filter((_, j) => j !== i));
 
   return (
     <div className="min-h-screen" data-testid="event-editor-page">
@@ -114,117 +113,182 @@ export default function EventEditor() {
             </div>
           </div>
 
-          <Accordion type="multiple" defaultValue={["basic", "details"]} className="space-y-2" data-testid="editor-accordion">
+          <Accordion type="multiple" defaultValue={["basic"]} className="space-y-2" data-testid="editor-accordion">
             <AccordionItem value="basic" className="border rounded-xl px-4 bg-white">
-              <AccordionTrigger className="font-heading font-semibold">Informasi Dasar</AccordionTrigger>
+              <AccordionTrigger className="font-heading font-semibold">Info Dasar</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 {isWedding && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Nama Mempelai Wanita</Label>
-                      <Input data-testid="input-bride" value={config.bride_name || ""} onChange={(e) => set("bride_name", e.target.value)} />
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Nama Panggilan Mempelai Wanita</Label><Input data-testid="input-bride" value={config.bride_name || ""} onChange={(e) => set("bride_name", e.target.value)} /></div>
+                      <div><Label>Nama Panggilan Mempelai Pria</Label><Input data-testid="input-groom" value={config.groom_name || ""} onChange={(e) => set("groom_name", e.target.value)} /></div>
                     </div>
-                    <div>
-                      <Label>Nama Mempelai Pria</Label>
-                      <Input data-testid="input-groom" value={config.groom_name || ""} onChange={(e) => set("groom_name", e.target.value)} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Nama Lengkap Wanita</Label><Input data-testid="input-bride-full" value={config.bride_full_name || ""} onChange={(e) => set("bride_full_name", e.target.value)} /></div>
+                      <div><Label>Nama Lengkap Pria</Label><Input data-testid="input-groom-full" value={config.groom_full_name || ""} onChange={(e) => set("groom_full_name", e.target.value)} /></div>
                     </div>
-                  </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Orang Tua Wanita</Label><Input data-testid="input-bride-parents" value={config.bride_parents || ""} onChange={(e) => set("bride_parents", e.target.value)} /></div>
+                      <div><Label>Orang Tua Pria</Label><Input data-testid="input-groom-parents" value={config.groom_parents || ""} onChange={(e) => set("groom_parents", e.target.value)} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Instagram Wanita (username)</Label><Input data-testid="input-bride-ig" value={config.bride_instagram || ""} onChange={(e) => set("bride_instagram", e.target.value)} placeholder="@username" /></div>
+                      <div><Label>Instagram Pria (username)</Label><Input data-testid="input-groom-ig" value={config.groom_instagram || ""} onChange={(e) => set("groom_instagram", e.target.value)} placeholder="@username" /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Foto Mempelai Wanita</Label>
+                        <div className="mt-1.5 flex items-center gap-3">
+                          {config.bride_photo && <img src={config.bride_photo} alt="" className="w-14 h-14 rounded-full object-cover" />}
+                          <button data-testid="btn-upload-bride-photo" onClick={() => bridePhotoRef.current?.click()} className="btn-ghost text-sm">{config.bride_photo ? "Ganti" : "Upload"}</button>
+                          <input ref={bridePhotoRef} type="file" accept="image/*" hidden onChange={(e) => uploadTo(e.target.files?.[0], (url) => set("bride_photo", url))} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Foto Mempelai Pria</Label>
+                        <div className="mt-1.5 flex items-center gap-3">
+                          {config.groom_photo && <img src={config.groom_photo} alt="" className="w-14 h-14 rounded-full object-cover" />}
+                          <button data-testid="btn-upload-groom-photo" onClick={() => groomPhotoRef.current?.click()} className="btn-ghost text-sm">{config.groom_photo ? "Ganti" : "Upload"}</button>
+                          <input ref={groomPhotoRef} type="file" accept="image/*" hidden onChange={(e) => uploadTo(e.target.files?.[0], (url) => set("groom_photo", url))} />
+                        </div>
+                      </div>
+                    </div>
+                    <div><Label>Hashtag</Label><Input data-testid="input-hashtag" value={config.hashtag || ""} onChange={(e) => set("hashtag", e.target.value)} placeholder="#AnandaWedding2026" /></div>
+                  </>
                 )}
                 {isAqiqah && (
                   <>
-                    <div>
-                      <Label>Nama Bayi</Label>
-                      <Input data-testid="input-baby" value={config.baby_name || ""} onChange={(e) => set("baby_name", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Orang Tua</Label>
-                      <Input data-testid="input-parents" value={config.parents || ""} onChange={(e) => set("parents", e.target.value)} />
-                    </div>
+                    <div><Label>Nama Bayi</Label><Input data-testid="input-baby" value={config.baby_name || ""} onChange={(e) => set("baby_name", e.target.value)} /></div>
+                    <div><Label>Orang Tua</Label><Input data-testid="input-parents" value={config.parents || ""} onChange={(e) => set("parents", e.target.value)} /></div>
                   </>
                 )}
                 {!isWedding && !isAqiqah && (
-                  <div>
-                    <Label>Nama Perayaan</Label>
-                    <Input data-testid="input-celebrant" value={config.celebrant || ""} onChange={(e) => set("celebrant", e.target.value)} />
-                  </div>
+                  <div><Label>Nama Perayaan</Label><Input data-testid="input-celebrant" value={config.celebrant || ""} onChange={(e) => set("celebrant", e.target.value)} /></div>
                 )}
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="details" className="border rounded-xl px-4 bg-white">
-              <AccordionTrigger className="font-heading font-semibold">Waktu & Tempat</AccordionTrigger>
+            {isWedding && (
+              <AccordionItem value="verse" className="border rounded-xl px-4 bg-white">
+                <AccordionTrigger className="font-heading font-semibold">Kutipan / Ayat Pembuka</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  <div><Label>Teks Kutipan</Label><Textarea rows={3} data-testid="input-verse-text" value={config.verse_text || ""} onChange={(e) => set("verse_text", e.target.value)} /></div>
+                  <div><Label>Referensi</Label><Input data-testid="input-verse-ref" value={config.verse_ref || ""} onChange={(e) => set("verse_ref", e.target.value)} placeholder="Jeremiah 29:11" /></div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            <AccordionItem value="events" className="border rounded-xl px-4 bg-white">
+              <AccordionTrigger className="font-heading font-semibold">Acara ({(config.events || []).length})</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Tanggal Acara</Label>
-                    <Input type="date" data-testid="input-date" value={config.event_date || ""} onChange={(e) => set("event_date", e.target.value)} />
+                {(config.events || []).map((ev, i) => (
+                  <div key={i} className="rounded-lg border p-3 bg-neutral-50 space-y-2" data-testid={`event-block-${i}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-500">Acara #{i + 1}</span>
+                      <button onClick={() => delEvent(i)} data-testid={`btn-del-event-${i}`} className="text-neutral-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input data-testid={`event-name-${i}`} placeholder="Nama (Akad/Resepsi)" value={ev.name} onChange={(e) => updEvent(i, "name", e.target.value)} />
+                      <Input data-testid={`event-date-${i}`} type="date" value={ev.date} onChange={(e) => updEvent(i, "date", e.target.value)} />
+                      <Input data-testid={`event-time-start-${i}`} type="time" value={ev.time_start} onChange={(e) => updEvent(i, "time_start", e.target.value)} />
+                      <Input data-testid={`event-time-end-${i}`} type="time" value={ev.time_end} onChange={(e) => updEvent(i, "time_end", e.target.value)} />
+                    </div>
+                    <Input data-testid={`event-venue-${i}`} placeholder="Venue" value={ev.venue} onChange={(e) => updEvent(i, "venue", e.target.value)} />
+                    <Input data-testid={`event-address-${i}`} placeholder="Alamat" value={ev.address} onChange={(e) => updEvent(i, "address", e.target.value)} />
+                    <Input data-testid={`event-maps-${i}`} placeholder="Google Maps URL" value={ev.maps_url} onChange={(e) => updEvent(i, "maps_url", e.target.value)} />
                   </div>
-                  <div>
-                    <Label>Waktu</Label>
-                    <Input type="time" data-testid="input-time" value={config.event_time || ""} onChange={(e) => set("event_time", e.target.value)} />
-                  </div>
-                </div>
-                <div>
-                  <Label>Tempat</Label>
-                  <Input data-testid="input-venue" value={config.venue || ""} onChange={(e) => set("venue", e.target.value)} />
-                </div>
-                <div>
-                  <Label>Alamat</Label>
-                  <Textarea rows={2} data-testid="input-address" value={config.venue_address || ""} onChange={(e) => set("venue_address", e.target.value)} />
-                </div>
-                <div>
-                  <Label>Pesan / Kutipan</Label>
-                  <Textarea rows={3} data-testid="input-story" value={config.story || ""} onChange={(e) => set("story", e.target.value)} />
-                </div>
+                ))}
+                <button data-testid="btn-add-event" onClick={addEvent} className="btn-ghost text-sm w-full justify-center"><Plus className="w-4 h-4 mr-1" /> Tambah Acara</button>
               </AccordionContent>
             </AccordionItem>
 
+            {isWedding && (
+              <AccordionItem value="story" className="border rounded-xl px-4 bg-white">
+                <AccordionTrigger className="font-heading font-semibold">Love Story ({(config.love_story || []).length})</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                  {(config.love_story || []).map((s, i) => (
+                    <div key={i} className="rounded-lg border p-3 bg-neutral-50 space-y-2" data-testid={`story-block-${i}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-neutral-500">Bab #{i + 1}</span>
+                        <button onClick={() => delLoveStory(i)} data-testid={`btn-del-story-${i}`} className="text-neutral-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input data-testid={`story-title-${i}`} placeholder="Judul (First Meet)" value={s.title} onChange={(e) => updLoveStory(i, "title", e.target.value)} />
+                        <Input data-testid={`story-date-${i}`} placeholder="Waktu (2021)" value={s.date} onChange={(e) => updLoveStory(i, "date", e.target.value)} />
+                      </div>
+                      <Textarea data-testid={`story-desc-${i}`} rows={2} placeholder="Cerita" value={s.description} onChange={(e) => updLoveStory(i, "description", e.target.value)} />
+                      <div className="flex items-center gap-2">
+                        {s.photo && <img src={s.photo} alt="" className="w-14 h-14 object-cover rounded" />}
+                        <input type="file" accept="image/*" hidden ref={(el) => (storyPhotoRef.current[i] = el)} onChange={(e) => uploadTo(e.target.files?.[0], (url) => updLoveStory(i, "photo", url))} />
+                        <button data-testid={`btn-story-photo-${i}`} onClick={() => storyPhotoRef.current[i]?.click()} className="btn-ghost text-xs">{s.photo ? "Ganti Foto" : "Upload Foto"}</button>
+                      </div>
+                    </div>
+                  ))}
+                  <button data-testid="btn-add-story" onClick={addLoveStory} className="btn-ghost text-sm w-full justify-center"><Plus className="w-4 h-4 mr-1" /> Tambah Bab</button>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
             <AccordionItem value="media" className="border rounded-xl px-4 bg-white">
-              <AccordionTrigger className="font-heading font-semibold">Foto & Musik</AccordionTrigger>
+              <AccordionTrigger className="font-heading font-semibold">Galeri, Musik & Video</AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div>
-                  <Label>Galeri Foto</Label>
+                  <Label>Galeri Foto ({(config.gallery || []).length})</Label>
                   <div className="mt-2 flex flex-wrap gap-3">
                     {(config.gallery || []).map((url, i) => (
                       <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border">
                         <img src={url} alt="" className="w-full h-full object-cover" />
-                        <button
-                          data-testid={`remove-photo-${i}`}
-                          onClick={() => set("gallery", config.gallery.filter((_, j) => j !== i))}
-                          className="absolute top-1 right-1 bg-black/70 rounded-full p-1"
-                        >
-                          <X className="w-3 h-3 text-white" />
-                        </button>
+                        <button data-testid={`remove-photo-${i}`} onClick={() => set("gallery", config.gallery.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-black/70 rounded-full p-1"><X className="w-3 h-3 text-white" /></button>
                       </div>
                     ))}
-                    <button
-                      data-testid="btn-upload-photo"
-                      onClick={() => fileRef.current?.click()}
-                      className="w-24 h-24 rounded-lg border-2 border-dashed border-[#e2dfd9] flex flex-col items-center justify-center text-neutral-500 hover:border-[#c05c46]"
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                      <span className="text-xs mt-1">Tambah</span>
+                    <button data-testid="btn-upload-photo" onClick={() => galleryRef.current?.click()} className="w-24 h-24 rounded-lg border-2 border-dashed border-[#e2dfd9] flex flex-col items-center justify-center text-neutral-500 hover:border-[#c05c46]">
+                      <ImageIcon className="w-5 h-5" /><span className="text-xs mt-1">Tambah</span>
                     </button>
-                    <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => upload(e.target.files?.[0], "gallery")} />
+                    <input ref={galleryRef} type="file" accept="image/*" hidden onChange={(e) => uploadTo(e.target.files?.[0], (url) => set("gallery", [...(config.gallery || []), url]))} />
                   </div>
                 </div>
                 <div>
                   <Label>Musik Latar</Label>
                   <div className="mt-2 flex items-center gap-3">
-                    {config.music_url && (
-                      <audio controls src={config.music_url} className="max-w-full" data-testid="music-preview" />
-                    )}
-                    <button
-                      data-testid="btn-upload-music"
-                      onClick={() => musicRef.current?.click()}
-                      className="btn-ghost text-sm"
-                    >
-                      <Music className="w-4 h-4 mr-1.5" /> {config.music_url ? "Ganti" : "Upload"}
-                    </button>
-                    <input ref={musicRef} type="file" accept="audio/*" hidden onChange={(e) => upload(e.target.files?.[0], "music")} />
+                    {config.music_url && <audio controls src={config.music_url} className="max-w-full" data-testid="music-preview" />}
+                    <button data-testid="btn-upload-music" onClick={() => musicRef.current?.click()} className="btn-ghost text-sm"><Music className="w-4 h-4 mr-1.5" /> {config.music_url ? "Ganti" : "Upload"}</button>
+                    <input ref={musicRef} type="file" accept="audio/*" hidden onChange={(e) => uploadTo(e.target.files?.[0], (url) => set("music_url", url))} />
                   </div>
                 </div>
+                <div>
+                  <Label>Video Prewedding (URL YouTube)</Label>
+                  <Input data-testid="input-video" value={config.video_url || ""} onChange={(e) => set("video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+                </div>
                 {uploading && <div className="text-sm text-neutral-500">Mengunggah...</div>}
+              </AccordionContent>
+            </AccordionItem>
+
+            {isWedding && (
+              <AccordionItem value="gift" className="border rounded-xl px-4 bg-white">
+                <AccordionTrigger className="font-heading font-semibold">Wedding Gift (Bank)</AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  {(config.banks || []).map((b, i) => (
+                    <div key={i} className="rounded-lg border p-3 bg-neutral-50 space-y-2" data-testid={`bank-block-${i}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-neutral-500">Rekening #{i + 1}</span>
+                        <button onClick={() => delBank(i)} data-testid={`btn-del-bank-${i}`} className="text-neutral-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input data-testid={`bank-name-${i}`} placeholder="BCA" value={b.bank} onChange={(e) => updBank(i, "bank", e.target.value)} />
+                        <Input data-testid={`bank-number-${i}`} placeholder="1234567890" value={b.account_number} onChange={(e) => updBank(i, "account_number", e.target.value)} />
+                        <Input data-testid={`bank-owner-${i}`} placeholder="Nama Pemilik" value={b.account_name} onChange={(e) => updBank(i, "account_name", e.target.value)} />
+                      </div>
+                    </div>
+                  ))}
+                  <button data-testid="btn-add-bank" onClick={addBank} className="btn-ghost text-sm w-full justify-center"><Plus className="w-4 h-4 mr-1" /> Tambah Rekening</button>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            <AccordionItem value="pesan" className="border rounded-xl px-4 bg-white">
+              <AccordionTrigger className="font-heading font-semibold">Pesan Pembuka</AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <Textarea rows={3} data-testid="input-story" value={config.story || ""} onChange={(e) => set("story", e.target.value)} />
               </AccordionContent>
             </AccordionItem>
 
@@ -233,12 +297,8 @@ export default function EventEditor() {
               <AccordionContent className="pt-2">
                 <div className="grid grid-cols-3 gap-3">
                   {templates.filter((t) => t.category === event.event_type).map((t) => (
-                    <button
-                      key={t.template_id}
-                      data-testid={`switch-template-${t.template_id}`}
-                      onClick={() => changeTemplate(t.template_id)}
-                      className={`rounded-lg overflow-hidden border-2 ${event.template_id === t.template_id ? "border-[#c05c46]" : "border-transparent"}`}
-                    >
+                    <button key={t.template_id} data-testid={`switch-template-${t.template_id}`} onClick={() => changeTemplate(t.template_id)}
+                            className={`rounded-lg overflow-hidden border-2 ${event.template_id === t.template_id ? "border-[#c05c46]" : "border-transparent"}`}>
                       <img src={t.cover} alt={t.name} className="w-full h-24 object-cover" />
                       <div className="p-2 text-xs font-medium text-left">{t.name}</div>
                     </button>

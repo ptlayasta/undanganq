@@ -1,0 +1,40 @@
+{
+  "summary": "Backend-only iteration 3. Verified new Anselma/Katsudoto additions: 'anselma-heritage' template in wedding category (4 wedding templates), enriched wedding default_config (hashtag, verse_text/ref, full names, parents, 3-chapter love_story, 2 events Akad+Resepsi, 1 bank, show_gift/show_wishes), rich-config PATCH persistence, public wishes POST/GET (success, validation 400s, invalid attending nulled, 404 on unknown slug, limit param, desc sort), owner-only /events/{id}/wishes (200 owner, 404 other user, 401 unauthenticated), plus public invitation payload exposing new config. Re-ran the 20-test regression suite: all pass after updating the template-count assertion (6 -> 7). Total 37/38 tests pass; the single failure is a genuine backend bug (wishes not cascade-deleted with the event).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/events/{event_id}", "issue": "Cascade deletes guests but NOT wishes (and not payments). Deleting an event leaves orphan documents in db.wishes forever. Add `await db.wishes.delete_many({'event_id': event_id})`."},
+      {"endpoint": "PATCH /api/events/{event_id}", "issue": "config is $set wholesale, so a partial PATCH like {config:{bride_name:'x'}} wipes every other config key (love_story/events/banks/verse). Frontend EventEditor currently sends the full config so the UI works, but the API is data-loss prone. Recommend merging: $set {'config.<k>': v} per key or deep-merge with the stored config."},
+      {"endpoint": "GET /api/public/inv/{slug}/wishes", "issue": "No pagination/offset and no rate limiting/spam protection on the public POST /wishes endpoint - anyone can flood the guestbook of any (even draft) event."},
+      {"endpoint": "POST /api/public/inv/{slug}/wishes", "issue": "Accepts wishes for events with status='draft' (public GET /public/inv/{slug} returns 404 for drafts). Inconsistent: consider requiring published status."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_wishes_and_config.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Add wishes (and payments) cascade delete in DELETE /api/events/{event_id}",
+    "Make PATCH /api/events/{id} config merge instead of replace (or document replace-only contract)",
+    "Consider blocking wish submission on draft/unpublished events + basic rate limiting"
+  ],
+  "critical_code_review_comments": [
+    "server.py delete_event(): guests are cascade-deleted but wishes are not - orphan data grows.",
+    "server.py update_event(): `$set {'config': cfg}` replaces the entire nested config; the enriched wedding config (love_story/events/banks) makes this materially riskier than before.",
+    "server.py is 744 lines and approaching the 700-line split threshold - consider splitting routers (auth/events/public/payments) into modules.",
+    "Wishes have no owner moderation/delete endpoint - a public guestbook without delete/hide is an abuse vector."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_wishes_and_config.py",
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "97% (37/38)", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "Two MongoDB-seeded test users + sessions (deleted in teardown), TEST_ prefixed wedding events and wishes (deleted in teardown; verified 0 leftover TEST wishes). One pre-existing test.user.* doc from a prior iteration remains in db.users.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "No passwords - Mongo-seeded session_token used via Authorization: Bearer (see /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "Suite = /app/backend/tests/backend_test.py (20 tests, template count now asserts 7) + /app/backend/tests/test_wishes_and_config.py (18 tests, new features). Run: cd /app/backend && python -m pytest tests/ -v. Only test_delete_event_removes_wishes fails (real cascade bug). test_patch_rich_config_persists intentionally asserts replace-semantics ('verse_ref' not in config) - flip it if the main agent implements config merging. Frontend of the new Katsudoto-style public invitation (cover gate, timeline, countdown, gift copy button, wishes form) has NOT been UI-tested yet.",
+  "rca_of_the_issue": "DELETE /api/events/{event_id} only issues db.guests.delete_many; the new db.wishes collection was added without extending the cascade. PATCH data-loss stems from `$set {'config': payload.config}` treating config as an opaque blob."
+}
