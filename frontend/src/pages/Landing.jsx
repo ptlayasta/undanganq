@@ -35,7 +35,7 @@ export default function Landing() {
               <button data-testid="hero-get-started" onClick={goStart} className="btn-primary">
                 Mulai Gratis <ChevronRight className="w-4 h-4" />
               </button>
-              <button data-testid="hero-see-templates" onClick={goStart} className="btn-ghost">
+              <button data-testid="hero-see-templates" onClick={() => navigate("/templates")} className="btn-ghost">
                 Lihat Template
               </button>
             </div>

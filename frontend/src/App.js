@@ -10,6 +10,7 @@ import Publish from "@/pages/Publish";
 import PublicInvitation from "@/pages/PublicInvitation";
 import AuthCallback from "@/pages/AuthCallback";
 import { AuthProvider } from "@/lib/auth";
+import TemplateGallery, { TemplatePreview } from "@/pages/TemplateGallery";
 import "@/App.css";
 
 function AppRouter() {
@@ -21,6 +22,8 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/templates" element={<TemplateGallery />} />
+      <Route path="/templates/:templateId/preview" element={<TemplatePreview />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/events/new" element={<NewEvent />} />
       <Route path="/events/:eventId/edit" element={<EventEditor />} />

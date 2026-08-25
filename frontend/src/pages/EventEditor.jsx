@@ -76,6 +76,26 @@ export default function EventEditor() {
 
   const isWedding = event.event_type === "wedding";
   const isAqiqah = event.event_type === "aqiqah";
+  const eventType = event.event_type;
+
+  const SECTIONS = [
+    { key: "show_cover", label: "Halaman Sampul (Cover)" },
+    { key: "show_verse", label: "Kutipan / Ayat" },
+    { key: "show_couple", label: "Kartu Mempelai / Utama" },
+    { key: "show_love_story", label: "Love Story / Timeline" },
+    { key: "show_gallery", label: "Galeri Foto" },
+    { key: "show_video", label: "Video" },
+    { key: "show_countdown", label: "Countdown & Save the Date" },
+    { key: "show_events", label: "Detail Acara + Maps" },
+    { key: "show_gift", label: "Amplop Digital / Gift" },
+    { key: "show_rsvp", label: "Form RSVP" },
+    { key: "show_wishes", label: "Ucapan & Doa (Guestbook)" },
+  ];
+  const ORNAMENTS = [
+    { key: "floral", label: "Floral" },
+    { key: "botanical", label: "Botanical" },
+    { key: "geometric", label: "Geometric" },
+  ];
 
   // Helpers for arrays
   const addLoveStory = () => set("love_story", [...(config.love_story || []), { title: "", date: "", description: "", photo: "" }]);
@@ -162,9 +182,102 @@ export default function EventEditor() {
                     <div><Label>Orang Tua</Label><Input data-testid="input-parents" value={config.parents || ""} onChange={(e) => set("parents", e.target.value)} /></div>
                   </>
                 )}
-                {!isWedding && !isAqiqah && (
+                {eventType === "khitanan" && (
+                  <>
+                    <div><Label>Nama Anak</Label><Input data-testid="input-child" value={config.child_name || ""} onChange={(e) => set("child_name", e.target.value)} /></div>
+                    <div><Label>Orang Tua</Label><Input data-testid="input-khitanan-parents" value={config.parents || ""} onChange={(e) => set("parents", e.target.value)} /></div>
+                  </>
+                )}
+                {eventType === "birthday" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Nama yang Berulang Tahun</Label><Input data-testid="input-celebrant" value={config.celebrant || ""} onChange={(e) => set("celebrant", e.target.value)} /></div>
+                      <div><Label>Umur</Label><Input data-testid="input-age" value={config.age || ""} onChange={(e) => set("age", e.target.value)} /></div>
+                    </div>
+                    <div><Label>Yang Mengundang</Label><Input data-testid="input-host" value={config.host || ""} onChange={(e) => set("host", e.target.value)} /></div>
+                  </>
+                )}
+                {eventType === "engagement" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Nama Wanita</Label><Input data-testid="input-eng-bride" value={config.bride_name || ""} onChange={(e) => set("bride_name", e.target.value)} /></div>
+                    <div><Label>Nama Pria</Label><Input data-testid="input-eng-groom" value={config.groom_name || ""} onChange={(e) => set("groom_name", e.target.value)} /></div>
+                  </div>
+                )}
+                {eventType === "graduation" && (
+                  <>
+                    <div><Label>Nama Wisudawan/wati</Label><Input data-testid="input-graduate" value={config.graduate_name || ""} onChange={(e) => set("graduate_name", e.target.value)} /></div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Gelar</Label><Input data-testid="input-degree" value={config.degree || ""} onChange={(e) => set("degree", e.target.value)} /></div>
+                      <div><Label>Universitas</Label><Input data-testid="input-university" value={config.university || ""} onChange={(e) => set("university", e.target.value)} /></div>
+                    </div>
+                  </>
+                )}
+                {eventType === "anniversary" && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label>Nama Istri</Label><Input data-testid="input-ann-bride" value={config.bride_name || ""} onChange={(e) => set("bride_name", e.target.value)} /></div>
+                    <div><Label>Nama Suami</Label><Input data-testid="input-ann-groom" value={config.groom_name || ""} onChange={(e) => set("groom_name", e.target.value)} /></div>
+                    <div><Label>Tahun ke-</Label><Input data-testid="input-years" value={config.years || ""} onChange={(e) => set("years", e.target.value)} /></div>
+                  </div>
+                )}
+                {eventType === "baby_shower" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Nama Ibu</Label><Input data-testid="input-mother" value={config.mother_name || ""} onChange={(e) => set("mother_name", e.target.value)} /></div>
+                    <div><Label>Nama Ayah</Label><Input data-testid="input-father" value={config.father_name || ""} onChange={(e) => set("father_name", e.target.value)} /></div>
+                  </div>
+                )}
+                {eventType === "syukuran" && (
+                  <>
+                    <div><Label>Nama Tuan Rumah</Label><Input data-testid="input-host-name" value={config.host_name || ""} onChange={(e) => set("host_name", e.target.value)} /></div>
+                    <div><Label>Occasion</Label><Input data-testid="input-occasion" value={config.occasion || ""} onChange={(e) => set("occasion", e.target.value)} placeholder="Syukuran Rumah Baru" /></div>
+                  </>
+                )}
+                {eventType === "corporate" && (
+                  <>
+                    <div><Label>Nama Perusahaan</Label><Input data-testid="input-company" value={config.company_name || ""} onChange={(e) => set("company_name", e.target.value)} /></div>
+                    <div><Label>Nama Acara</Label><Input data-testid="input-event-name" value={config.event_name || ""} onChange={(e) => set("event_name", e.target.value)} /></div>
+                  </>
+                )}
+                {!["wedding", "aqiqah", "khitanan", "birthday", "engagement", "graduation", "anniversary", "baby_shower", "syukuran", "corporate"].includes(eventType) && (
                   <div><Label>Nama Perayaan</Label><Input data-testid="input-celebrant" value={config.celebrant || ""} onChange={(e) => set("celebrant", e.target.value)} /></div>
                 )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="sections" className="border rounded-xl px-4 bg-white">
+              <AccordionTrigger className="font-heading font-semibold">Bagian yang Ditampilkan</AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <p className="text-xs text-neutral-500 mb-3">Aktifkan/nonaktifkan bagian sesuai kebutuhan. Data yang sudah diisi tetap tersimpan.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {SECTIONS.map((s) => {
+                    const active = config[s.key] !== false;
+                    return (
+                      <label key={s.key} data-testid={`toggle-${s.key}`}
+                             className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${active ? "border-[#c05c46] bg-[#faf3ef]" : "border-[#e2dfd9] bg-white"}`}>
+                        <span className="text-sm">{s.label}</span>
+                        <input type="checkbox" checked={active} onChange={(e) => set(s.key, e.target.checked)} className="accent-[#c05c46] w-4 h-4" />
+                      </label>
+                    );
+                  })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="ornament" className="border rounded-xl px-4 bg-white">
+              <AccordionTrigger className="font-heading font-semibold">Ornamen Dekoratif</AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <p className="text-xs text-neutral-500 mb-3">Pilih gaya ornamen yang digunakan di semua bagian undangan.</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {ORNAMENTS.map((o) => {
+                    const active = (config.ornament_set || "floral") === o.key;
+                    return (
+                      <button key={o.key} data-testid={`ornament-${o.key}`} onClick={() => set("ornament_set", o.key)}
+                              className={`p-4 rounded-xl border-2 transition-colors ${active ? "border-[#c05c46] bg-[#faf3ef]" : "border-[#e2dfd9]"}`}>
+                        <div className="text-sm font-semibold">{o.label}</div>
+                        <div className="text-[10px] text-neutral-500 mt-1">{o.key === "floral" ? "Bunga & titik lembut" : o.key === "botanical" ? "Daun & sulur" : "Garis & geometri"}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </AccordionContent>
             </AccordionItem>
 
@@ -263,9 +376,9 @@ export default function EventEditor() {
               </AccordionContent>
             </AccordionItem>
 
-            {isWedding && (
+            {(config.banks !== undefined || eventType === "wedding" || eventType === "engagement" || eventType === "anniversary") && (
               <AccordionItem value="gift" className="border rounded-xl px-4 bg-white">
-                <AccordionTrigger className="font-heading font-semibold">Wedding Gift (Bank)</AccordionTrigger>
+                <AccordionTrigger className="font-heading font-semibold">Amplop Digital (Bank)</AccordionTrigger>
                 <AccordionContent className="space-y-3 pt-2">
                   {(config.banks || []).map((b, i) => (
                     <div key={i} className="rounded-lg border p-3 bg-neutral-50 space-y-2" data-testid={`bank-block-${i}`}>

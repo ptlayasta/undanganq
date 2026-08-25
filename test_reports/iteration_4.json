@@ -1,0 +1,37 @@
+{
+  "summary": "Backend-only testing of the new batch (10 event types, 21 templates, ornament_set, section toggles, wish->RSVP cascade, Xendit ready-for-keys mock paths). Added /app/backend/tests/test_new_features.py (31 new tests) and ran the full suite: 69/69 passed (38 pre-existing regression tests all still green). Verified: GET /api/event-types returns exactly 10 keys in the requested order; GET /api/templates returns 21 unique templates covering all 10 categories with valid ornament/theme/cover and per-category filters non-empty; GET /api/payment/config == {provider:'xendit', mode:'mocked'}; POST /api/events for engagement/khitanan/graduation/anniversary/baby_shower/syukuran/corporate return type-appropriate default_config (engagement bride/groom + show_love_story=false, graduation graduate_name/degree/university, corporate company_name/event_name, baby_shower mother/father/due_date, anniversary years, syukuran host_name/occasion, khitanan child_name/parents), each with ornament_set='floral' and all 11 show_* boolean flags, and all persisted via GET; PATCH /api/events/{id} persists show_gallery=false/show_wishes=false/ornament_set='geometric' and toggles are exposed on the public invitation payload (user_id stripped); wish cascade works for attending (rsvp_updated=true, guest rsvp_status/guest_count=3/notes/responded_at set, /rsvp/summary shows attending=1, headcount=3, pending=2), not_attending cascades with default guest_count=1, guest_count clamped at 20, 'maybe' does NOT cascade (rsvp_updated=false), no guest_slug or unknown guest_slug creates the wish with rsvp_updated=false; mock checkout returns {mocked:true, mode:'mocked', amount_idr:149000, payment_id pay_*, checkout_url /checkout/{payment_id}}; /api/xendit/webhook rejects requests when no callback token is configured; unauthenticated checkout returns 401.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/public/inv/{slug}/wishes", "issue": "rsvp_updated is derived from update_one().modified_count. If the guest doc already holds identical rsvp values the write is a no-op and the API reports rsvp_updated=false even though the guest matched. Prefer matched_count (responded_at currently masks this most of the time)."},
+      {"endpoint": "PATCH /api/events/{id}", "issue": "config is replaced wholesale (no server-side merge). A partial PATCH such as {config:{show_gallery:false}} silently drops every other config key. Frontend sends the full object so the UI works, but the API contract is fragile for the new per-section toggles."},
+      {"endpoint": "POST /api/events", "issue": "template_id is not validated against the TEMPLATES list, and event_type is not validated against EVENT_TYPES - an unknown type silently falls back to the generic base config."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_wishes_and_config.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Consider using matched_count for rsvp_updated in submit_wish so an idempotent resubmit is not reported as a failed cascade.",
+    "Consider merging config on PATCH (or documenting that clients must send the full config) now that 11 independent section toggles exist.",
+    "Validate event_type/template_id on POST /api/events (400 on unknown values) instead of silently using the fallback config.",
+    "Split /app/backend/server.py (967 lines) into routers/modules (templates, events, public, payments)."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 967 lines and holds templates data, routers, and payment integration in one file - split into modules.",
+    "Xendit live path uses the blocking `requests` library inside async endpoints (checkout + payment complete); this blocks the event loop under load. Use httpx.AsyncClient or run_in_executor before enabling real keys.",
+    "submit_wish cascade does not verify the guest exists; an invalid guest_slug quietly returns rsvp_updated=false with no signal to the client."
+  ],
+  "updated_files": ["/app/backend/tests/test_new_features.py"],
+  "success_rate": {"backend": "100% (69/69)", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "Seeded a temporary Mongo user + user_sessions token per test module (deleted in teardown); all created events/guests/wishes prefixed TEST and deleted in fixture teardown.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "No passwords - seeded MongoDB session token per /app/memory/test_credentials.md (Authorization: Bearer <session_token>).",
+  "context_for_next_testing_agent": "Backend suite now has 3 files under /app/backend/tests (69 tests, all green): backend_test.py (core CRUD/payment/RSVP), test_wishes_and_config.py (rich wedding config + wishes), test_new_features.py (event types, 21 templates, section toggles, ornament_set, wish->RSVP cascade, mock checkout, webhook auth). Frontend was NOT tested this iteration - /templates gallery, /templates/:id/preview, ornament rendering, Google Maps iframe embed, and the floating music toggle still need UI verification.",
+  "rca_of_the_issue": "No functional defects found. Minor findings are contract-level: modified_count-based rsvp_updated flag, non-merging config PATCH, and missing event_type/template_id validation."
+}

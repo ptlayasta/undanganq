@@ -59,10 +59,19 @@ export default function PublicInvitation() {
     if (!wishForm.name.trim() || !wishForm.message.trim()) return toast.error("Nama dan pesan wajib diisi");
     setWishBusy(true);
     try {
-      const { data: w } = await apiClient.post(`/public/inv/${slug}/wishes`, wishForm);
+      const { data: w } = await apiClient.post(`/public/inv/${slug}/wishes`, {
+        ...wishForm,
+        guest_slug: guestSlug || null,
+        guest_count: rsvp.guest_count || 1,
+      });
       setWishes((prev) => [w, ...prev]);
+      // If cascade RSVP happened, sync local state too
+      if (w.rsvp_updated) {
+        setSubmitted(true);
+        setRsvp((r) => ({ ...r, status: wishForm.attending, notes: wishForm.message }));
+      }
       setWishForm((f) => ({ ...f, message: "", attending: "" }));
-      toast.success("Ucapan terkirim");
+      toast.success(w.rsvp_updated ? "Ucapan & RSVP terkirim" : "Ucapan terkirim");
     } catch { toast.error("Gagal kirim ucapan"); } finally { setWishBusy(false); }
   };
 

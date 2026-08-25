@@ -82,7 +82,7 @@ def test_wedding_templates_include_anselma():
     r = requests.get(f"{API}/templates?category=wedding")
     assert r.status_code == 200
     data = r.json()
-    assert len(data) == 4, [t["template_id"] for t in data]
+    assert len(data) == 8, [t["template_id"] for t in data]
     ids = [t["template_id"] for t in data]
     assert "anselma-heritage" in ids
     t = next(x for x in data if x["template_id"] == "anselma-heritage")

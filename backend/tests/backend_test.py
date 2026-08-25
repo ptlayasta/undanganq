@@ -66,7 +66,7 @@ def test_templates_list():
     r = requests.get(f"{API}/templates")
     assert r.status_code == 200
     data = r.json()
-    assert len(data) == 7
+    assert len(data) == 21
     cats = {t["category"] for t in data}
     assert {"wedding", "aqiqah", "birthday", "corporate"}.issubset(cats)
 

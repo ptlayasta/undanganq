@@ -1,24 +1,14 @@
-import { useMemo, useState } from "react";
-import { Calendar, MapPin, Music2, Instagram, Copy, CalendarPlus, ExternalLink, Youtube } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { Calendar, MapPin, Music2, VolumeX, Instagram, Copy, CalendarPlus, ExternalLink, Youtube } from "lucide-react";
 import { toast } from "sonner";
 import Countdown from "@/components/app/Countdown";
+import Ornament from "@/components/app/Ornament";
 
-function Ornament({ color = "#c9a961", size = 60 }) {
-  return (
-    <svg width={size} height="12" viewBox="0 0 120 12" fill="none" className="mx-auto opacity-80">
-      <path d="M2 6 Q30 -2 60 6 T118 6" stroke={color} strokeWidth="1" fill="none" />
-      <circle cx="60" cy="6" r="2" fill={color} />
-      <circle cx="18" cy="6" r="1" fill={color} />
-      <circle cx="102" cy="6" r="1" fill={color} />
-    </svg>
-  );
-}
-
-function SectionLabel({ text, accent, mutedColor }) {
+function SectionLabel({ text, accent, mutedColor, variant = "floral" }) {
   return (
     <div className="text-center">
       <div className="text-[11px] uppercase tracking-[0.4em]" style={{ color: mutedColor }}>{text}</div>
-      <Ornament color={accent} />
+      <Ornament variant={variant} color={accent} />
     </div>
   );
 }
@@ -50,6 +40,49 @@ function gcalUrl(cfg) {
   return `https://www.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}&location=${loc}`;
 }
 
+function MusicToggle({ url, accent, bg, preview }) {
+  const audioRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.loop = true;
+    a.volume = 0.5;
+    const p = a.play();
+    if (p && p.then) p.then(() => setPlaying(true)).catch(() => setPlaying(false));
+  }, [url]);
+
+  const toggle = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (a.paused) {
+      a.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      a.pause();
+      setPlaying(false);
+    }
+  };
+
+  return (
+    <>
+      <audio ref={audioRef} src={url} preload="auto" />
+      <button
+        data-testid="music-toggle"
+        onClick={toggle}
+        aria-label={playing ? "Matikan musik" : "Nyalakan musik"}
+        className={`${preview ? "sticky" : "fixed"} bottom-5 right-5 z-30 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105`}
+        style={{ background: accent, color: bg?.startsWith("#1") ? "#1a1410" : "white" }}
+      >
+        <span className={`absolute inset-0 rounded-full ${playing ? "animate-ping" : ""}`} style={{ background: accent, opacity: 0.35 }} />
+        <span className="relative">
+          {playing ? <Music2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </span>
+      </button>
+    </>
+  );
+}
+
 export default function InvitationRenderer({ event, template, guest, preview = false }) {
   const cfg = event?.config || {};
   const theme = template?.theme || { primary: "#8a6a3a", accent: "#c9a961", bg: "#f4ecdd", font_heading: "Cormorant Garamond" };
@@ -61,6 +94,8 @@ export default function InvitationRenderer({ event, template, guest, preview = f
 
   const isWedding = event?.event_type === "wedding";
   const [lightbox, setLightbox] = useState(null);
+  const ornamentVariant = cfg.ornament_set || theme.ornament || "floral";
+  const show = (key, defaultOn = true) => cfg[key] !== false && (cfg[key] === true || defaultOn);
 
   const targetDate = useMemo(() => {
     const ev = cfg.events?.[0];
@@ -70,9 +105,21 @@ export default function InvitationRenderer({ event, template, guest, preview = f
     return `${date}T${(time || "10:00").padEnd(5, "0")}:00`;
   }, [cfg]);
 
-  const heroTitle = isWedding
-    ? `${cfg.bride_name || "Bride"} & ${cfg.groom_name || "Groom"}`
+  const heroLabel = {
+    wedding: "The Wedding of", engagement: "Engagement of", aqiqah: "Aqiqah",
+    khitanan: "Khitanan", birthday: "Ulang Tahun", graduation: "Wisuda",
+    anniversary: "Anniversary", baby_shower: "Baby Shower", syukuran: "Syukuran",
+    corporate: "Corporate Event",
+  }[event?.event_type] || "Undangan";
+
+  const heroTitle = isWedding || event?.event_type === "engagement" || event?.event_type === "anniversary"
+    ? `${cfg.bride_name || cfg.mother_name || ""} & ${cfg.groom_name || cfg.father_name || ""}`
     : event?.event_type === "aqiqah" ? cfg.baby_name || "Nama Bayi"
+    : event?.event_type === "khitanan" ? cfg.child_name || "Nama Anak"
+    : event?.event_type === "graduation" ? cfg.graduate_name || event?.title
+    : event?.event_type === "baby_shower" ? `Baby ${cfg.mother_name || ""}`
+    : event?.event_type === "syukuran" ? cfg.occasion || event?.title
+    : event?.event_type === "corporate" ? cfg.event_name || event?.title
     : cfg.celebrant || event?.title;
 
   const copy = (text, label) => {
@@ -92,10 +139,8 @@ export default function InvitationRenderer({ event, template, guest, preview = f
     >
       {/* HERO */}
       <section className="relative px-6 pt-12 pb-10 text-center overflow-hidden">
-        <div className="text-[10px] uppercase tracking-[0.4em]" style={{ color: accent }}>
-          {isWedding ? "The Wedding of" : event?.event_type === "aqiqah" ? "Aqiqah" : "Undangan"}
-        </div>
-        <Ornament color={accent} />
+        <div className="text-[10px] uppercase tracking-[0.4em]" style={{ color: accent }}>{heroLabel}</div>
+        <Ornament variant={ornamentVariant} color={accent} />
         <h1
           className="mt-3 leading-[1.0]"
           style={{ fontFamily: `${theme.font_heading}, serif`, fontSize: preview ? "2.6rem" : "3.6rem", color: textColor }}
@@ -105,7 +150,7 @@ export default function InvitationRenderer({ event, template, guest, preview = f
         {cfg.hashtag && (
           <div className="mt-3 text-xs italic" style={{ color: mutedColor }}>{cfg.hashtag}</div>
         )}
-        <Ornament color={accent} />
+        <Ornament variant={ornamentVariant} color={accent} />
         {targetDate && (
           <div className="mt-3 text-sm" style={{ color: mutedColor, fontFamily: `${theme.font_heading}, serif`, fontSize: "1.1rem" }}>
             {fmtDateID(cfg.events?.[0]?.date || cfg.event_date)}
@@ -123,7 +168,7 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       )}
 
       {/* VERSE */}
-      {cfg.verse_text && (
+      {show("show_verse") && cfg.verse_text && (
         <section className="px-8 py-10 text-center">
           <p className="italic leading-relaxed" style={{ fontFamily: `${theme.font_heading}, serif`, color: textColor, fontSize: "1.1rem" }}>
             &ldquo;{cfg.verse_text}&rdquo;
@@ -133,9 +178,9 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       )}
 
       {/* BRIDE & GROOM */}
-      {isWedding && (
+      {show("show_couple") && isWedding && (
         <section className="px-6 py-10" style={{ background: cardBg }}>
-          <SectionLabel text="The Bride & Groom" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text="The Bride & Groom" accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <div className="mt-8 space-y-8">
             {[
               { key: "groom", name: cfg.groom_full_name || cfg.groom_name, photo: cfg.groom_photo, parents: cfg.groom_parents, ig: cfg.groom_instagram },
@@ -168,9 +213,9 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       )}
 
       {/* LOVE STORY */}
-      {isWedding && cfg.love_story?.length > 0 && (
+      {show("show_love_story") && isWedding && cfg.love_story?.length > 0 && (
         <section className="px-6 py-12">
-          <SectionLabel text="Our Love Story" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text="Our Love Story" accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <div className="mt-8 space-y-8">
             {cfg.love_story.map((s, i) => (
               <div key={i} className="text-center">
@@ -187,9 +232,9 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       )}
 
       {/* GALLERY */}
-      {cfg.gallery?.length > 0 && (
+      {show("show_gallery") && cfg.gallery?.length > 0 && (
         <section className="px-6 py-12" style={{ background: cardBg }}>
-          <SectionLabel text="Portrait of Us" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text="Portrait of Us" accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <div className="mt-8 grid grid-cols-2 gap-2">
             {cfg.gallery.slice(0, 8).map((url, i) => (
               <button key={i} onClick={() => setLightbox(url)} className="aspect-square overflow-hidden rounded-lg group">
@@ -201,9 +246,9 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       )}
 
       {/* VIDEO */}
-      {videoEmbed && (
+      {show("show_video") && videoEmbed && (
         <section className="px-6 py-12">
-          <SectionLabel text="Our Video Gallery" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text="Our Video Gallery" accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <div className="mt-6 rounded-xl overflow-hidden shadow-lg">
             <div className="aspect-video">
               <iframe src={videoEmbed} title="Wedding video" className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
@@ -211,7 +256,7 @@ export default function InvitationRenderer({ event, template, guest, preview = f
           </div>
         </section>
       )}
-      {!videoEmbed && cfg.video_url && (
+      {show("show_video") && !videoEmbed && cfg.video_url && (
         <section className="px-6 py-8 text-center">
           <a href={cfg.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm" style={{ color: accent }}>
             <Youtube className="w-4 h-4" /> Tonton Video Kami
@@ -220,9 +265,9 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       )}
 
       {/* SAVE THE DATE + COUNTDOWN */}
-      {targetDate && (
+      {show("show_countdown") && targetDate && (
         <section className="px-6 py-12 text-center" style={{ background: cardBg }}>
-          <SectionLabel text="Save the Date" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text="Save the Date" accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <div className="mt-6">
             <Countdown targetDate={targetDate} accent={accent} textColor={textColor} />
           </div>
@@ -236,43 +281,62 @@ export default function InvitationRenderer({ event, template, guest, preview = f
         </section>
       )}
 
-      {/* WEDDING EVENTS */}
-      {(cfg.events?.length > 0 || cfg.venue) && (
+      {/* EVENTS with Google Maps embed */}
+      {show("show_events") && (cfg.events?.length > 0 || cfg.venue) && (
         <section className="px-6 py-12">
-          <SectionLabel text="The Wedding Day" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text={isWedding ? "The Wedding Day" : "Detail Acara"} accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <p className="mt-4 text-center text-sm italic max-w-md mx-auto" style={{ color: mutedColor, fontFamily: `${theme.font_heading}, serif`, fontSize: "1.05rem" }}>
             {cfg.story || "Dengan penuh sukacita, kami mengundang Bapak/Ibu/Saudara/i untuk hadir."}
           </p>
           <div className="mt-8 space-y-5">
-            {(cfg.events && cfg.events.length > 0 ? cfg.events : [{ name: "Acara", date: cfg.event_date, time_start: cfg.event_time, venue: cfg.venue, address: cfg.venue_address }]).map((ev, i) => (
-              <div key={i} className="rounded-2xl p-6 text-center border" style={{ background: cardBg, borderColor: `${accent}44` }}>
-                <div className="text-[10px] uppercase tracking-[0.35em]" style={{ color: accent }}>{ev.name || "Acara"}</div>
-                <div className="mt-3 text-2xl" style={{ fontFamily: `${theme.font_heading}, serif`, color: textColor }}>
-                  {fmtDateID(ev.date)}
-                </div>
-                {(ev.time_start || ev.time_end) && (
-                  <div className="mt-1 text-sm" style={{ color: mutedColor }}>
-                    {ev.time_start || ""}{ev.time_end ? ` - ${ev.time_end}` : ""} WIB
+            {(cfg.events && cfg.events.length > 0 ? cfg.events : [{ name: "Acara", date: cfg.event_date, time_start: cfg.event_time, venue: cfg.venue, address: cfg.venue_address }]).map((ev, i) => {
+              const mapQuery = encodeURIComponent(`${ev.venue || ""} ${ev.address || ""}`.trim());
+              const mapSrc = ev.maps_url && ev.maps_url.includes("google.com/maps") && ev.maps_url.includes("embed")
+                ? ev.maps_url
+                : (mapQuery ? `https://www.google.com/maps?q=${mapQuery}&output=embed` : null);
+              return (
+                <div key={i} className="rounded-2xl overflow-hidden border" style={{ background: cardBg, borderColor: `${accent}44` }}>
+                  <div className="p-6 text-center">
+                    <div className="text-[10px] uppercase tracking-[0.35em]" style={{ color: accent }}>{ev.name || "Acara"}</div>
+                    <div className="mt-3 text-2xl" style={{ fontFamily: `${theme.font_heading}, serif`, color: textColor }}>
+                      {fmtDateID(ev.date)}
+                    </div>
+                    {(ev.time_start || ev.time_end) && (
+                      <div className="mt-1 text-sm" style={{ color: mutedColor }}>
+                        {ev.time_start || ""}{ev.time_end ? ` - ${ev.time_end}` : ""} WIB
                   </div>
                 )}
                 <Ornament color={accent} size={40} />
                 {ev.venue && <div className="mt-2 font-semibold" style={{ color: textColor }}>{ev.venue}</div>}
                 {ev.address && <p className="mt-1 text-xs" style={{ color: mutedColor }}>{ev.address}</p>}
-                {ev.maps_url && (
-                  <button onClick={() => openMaps(ev.maps_url)} className="mt-4 inline-flex items-center gap-1.5 text-xs px-4 py-2 rounded-full border" style={{ borderColor: accent, color: accent }}>
-                    <MapPin className="w-3.5 h-3.5" /> View Maps <ExternalLink className="w-3 h-3" />
+                {(ev.maps_url || mapQuery) && (
+                  <button onClick={() => openMaps(ev.maps_url || `https://www.google.com/maps?q=${mapQuery}`)} className="mt-4 inline-flex items-center gap-1.5 text-xs px-4 py-2 rounded-full border" style={{ borderColor: accent, color: accent }}>
+                    <MapPin className="w-3.5 h-3.5" /> Buka Maps <ExternalLink className="w-3 h-3" />
                   </button>
                 )}
-              </div>
-            ))}
+                  </div>
+                  {mapSrc && (
+                    <div className="w-full aspect-[16/10] border-t" style={{ borderColor: `${accent}22` }}>
+                      <iframe
+                        src={mapSrc}
+                        title={`Peta ${ev.venue || ev.name}`}
+                        className="w-full h-full"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* WEDDING GIFT */}
-      {cfg.show_gift && cfg.banks?.length > 0 && (
+      {/* GIFT */}
+      {show("show_gift") && cfg.banks?.length > 0 && (
         <section className="px-6 py-12" style={{ background: cardBg }}>
-          <SectionLabel text="Wedding Gift" accent={accent} mutedColor={mutedColor} />
+          <SectionLabel text={isWedding ? "Wedding Gift" : "Amplop Digital"} accent={accent} mutedColor={mutedColor} variant={ornamentVariant} />
           <p className="mt-4 text-center text-sm max-w-sm mx-auto" style={{ color: mutedColor }}>
             Doa restu dan kehadiran Anda sudah lebih dari cukup. Namun jika Anda ingin memberi hadiah, kami menyediakan amplop digital.
           </p>
@@ -296,15 +360,8 @@ export default function InvitationRenderer({ event, template, guest, preview = f
         </section>
       )}
 
-      {/* Music player */}
-      {cfg.music_url && (
-        <div className={`${preview ? "sticky" : "fixed"} bottom-4 right-4 z-30`}>
-          <details className="rounded-full px-3 py-2 text-xs shadow-lg" style={{ background: theme.bg, border: `1px solid ${accent}`, color: textColor }}>
-            <summary className="flex items-center gap-1.5 cursor-pointer list-none"><Music2 className="w-3.5 h-3.5" style={{ color: accent }} /> Musik</summary>
-            <audio controls autoPlay src={cfg.music_url} className="mt-2 w-56" />
-          </details>
-        </div>
-      )}
+      {/* Music player - floating on/off toggle */}
+      {cfg.music_url && <MusicToggle url={cfg.music_url} accent={accent} bg={theme.bg} preview={preview} />}
 
       {/* Lightbox */}
       {lightbox && (
