@@ -353,6 +353,76 @@ async def list_event_types():
     return EVENT_TYPES
 
 
+# Curated stock photo library for hero backgrounds (free-license Unsplash/Pexels URLs)
+STOCK_BACKGROUNDS = {
+    "florals": [
+        "https://images.unsplash.com/photo-1543157145-f78c636d023d?w=1200&q=80",
+        "https://images.unsplash.com/photo-1612538946893-033c6bb7060c?w=1200&q=80",
+        "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1200&q=80",
+        "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=1200&q=80",
+        "https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=1200&q=80",
+        "https://images.unsplash.com/photo-1502977249166-824b3a8a4d6d?w=1200&q=80",
+    ],
+    "bali_nature": [
+        "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&q=80",
+        "https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=1200&q=80",
+        "https://images.unsplash.com/photo-1512100356356-de1b84283e18?w=1200&q=80",
+        "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=1200&q=80",
+        "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=1200&q=80",
+        "https://images.unsplash.com/photo-1520454974749-611b7248ffdb?w=1200&q=80",
+    ],
+    "batik_heritage": [
+        "https://images.unsplash.com/photo-1650377509454-1bbd8392e122?w=1200&q=80",
+        "https://images.unsplash.com/photo-1650377509488-724221735c19?w=1200&q=80",
+        "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80",
+        "https://images.unsplash.com/photo-1543269664-56d93c1b41a6?w=1200&q=80",
+    ],
+    "botanical": [
+        "https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?w=1200&q=80",
+        "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=1200&q=80",
+        "https://images.unsplash.com/photo-1524055988636-436cfa46e59e?w=1200&q=80",
+        "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1200&q=80",
+        "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1200&q=80",
+    ],
+    "elegant_minimal": [
+        "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=1200&q=80",
+        "https://images.unsplash.com/photo-1511578314322-379afb476865?w=1200&q=80",
+        "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80",
+        "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=1200&q=80",
+        "https://images.unsplash.com/photo-1524429656589-6633a470097c?w=1200&q=80",
+    ],
+    "ocean_beach": [
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
+        "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&q=80",
+        "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1200&q=80",
+        "https://images.unsplash.com/photo-1439405326854-014607f694d7?w=1200&q=80",
+    ],
+    "watercolor": [
+        "https://images.unsplash.com/photo-1580136579312-94651dfd596d?w=1200&q=80",
+        "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80",
+        "https://images.unsplash.com/photo-1550592704-6c76defa9985?w=1200&q=80",
+        "https://images.unsplash.com/photo-1579762593175-20226054cad0?w=1200&q=80",
+    ],
+}
+
+STOCK_CATEGORIES = [
+    {"key": "florals", "label": "Bunga & Floral"},
+    {"key": "bali_nature", "label": "Bali & Alam"},
+    {"key": "batik_heritage", "label": "Batik & Heritage"},
+    {"key": "botanical", "label": "Botanical & Daun"},
+    {"key": "elegant_minimal", "label": "Elegan Minimalis"},
+    {"key": "ocean_beach", "label": "Laut & Pantai"},
+    {"key": "watercolor", "label": "Watercolor"},
+]
+
+
+@api_router.get("/stock-backgrounds")
+async def list_stock_backgrounds(category: Optional[str] = None):
+    if category:
+        return {"category": category, "images": STOCK_BACKGROUNDS.get(category, [])}
+    return {"categories": STOCK_CATEGORIES, "all": STOCK_BACKGROUNDS}
+
+
 # ------------------------------ Events ---------------------------------------
 DEFAULT_SECTIONS = {
     "show_cover": True,

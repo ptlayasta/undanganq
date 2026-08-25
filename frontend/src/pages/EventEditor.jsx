@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import InvitationRenderer from "@/components/app/InvitationRenderer";
-import { Save, Users, Rocket, Image as ImageIcon, Music, X, Plus, Trash2 } from "lucide-react";
+import { Save, Users, Rocket, Image as ImageIcon, Music, X, Plus, Trash2, Sparkles } from "lucide-react";
+import StockPicker from "@/components/app/StockPicker";
 
 export default function EventEditor() {
   const { eventId } = useParams();
@@ -20,6 +21,7 @@ export default function EventEditor() {
   const [config, setConfig] = useState({});
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [stockOpen, setStockOpen] = useState(false);
   const galleryRef = useRef();
   const musicRef = useRef();
   const bridePhotoRef = useRef();
@@ -259,11 +261,14 @@ export default function EventEditor() {
                 </div>
                 <div>
                   <Label>Gambar Latar Belakang (opsional)</Label>
-                  <div className="mt-2 flex items-center gap-3">
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
                     {config.hero_bg && <img src={config.hero_bg} alt="" className="w-16 h-16 rounded object-cover border" />}
                     <input type="file" accept="image/*" hidden ref={heroBgRef} onChange={(e) => uploadTo(e.target.files?.[0], (url) => set("hero_bg", url))} />
                     <button data-testid="btn-upload-hero-bg" onClick={() => heroBgRef.current?.click()} className="btn-ghost text-sm">
-                      {config.hero_bg ? "Ganti Gambar" : "Upload Gambar"}
+                      <ImageIcon className="w-4 h-4 mr-1.5" /> {config.hero_bg ? "Ganti" : "Upload"}
+                    </button>
+                    <button data-testid="btn-open-stock" onClick={() => setStockOpen(true)} className="btn-primary text-sm">
+                      <Sparkles className="w-4 h-4" /> Pilih dari Galeri
                     </button>
                     {config.hero_bg && (
                       <button data-testid="btn-remove-hero-bg" onClick={() => set("hero_bg", "")} className="text-xs text-red-500 hover:underline">
@@ -271,6 +276,7 @@ export default function EventEditor() {
                       </button>
                     )}
                   </div>
+                  <p className="text-xs text-neutral-500 mt-2">Tidak punya foto? Pilih dari galeri kurasi (bunga, Bali, batik, dsb).</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -511,6 +517,12 @@ export default function EventEditor() {
           </div>
         </aside>
       </main>
+      <StockPicker
+        open={stockOpen}
+        onOpenChange={setStockOpen}
+        currentUrl={config.hero_bg}
+        onPick={(url) => set("hero_bg", url)}
+      />
     </div>
   );
 }
