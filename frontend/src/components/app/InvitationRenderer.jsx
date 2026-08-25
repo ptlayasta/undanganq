@@ -105,12 +105,12 @@ export default function InvitationRenderer({ event, template, guest, preview = f
     return `${date}T${(time || "10:00").padEnd(5, "0")}:00`;
   }, [cfg]);
 
-  const heroLabel = {
+  const heroLabel = cfg.hero_label !== undefined && cfg.hero_label !== "" ? cfg.hero_label : ({
     wedding: "The Wedding of", engagement: "Engagement of", aqiqah: "Aqiqah",
     khitanan: "Khitanan", birthday: "Ulang Tahun", graduation: "Wisuda",
     anniversary: "Anniversary", baby_shower: "Baby Shower", syukuran: "Syukuran",
     corporate: "Corporate Event",
-  }[event?.event_type] || "Undangan";
+  }[event?.event_type] || "Undangan");
 
   const heroTitle = isWedding || event?.event_type === "engagement" || event?.event_type === "anniversary"
     ? `${cfg.bride_name || cfg.mother_name || ""} & ${cfg.groom_name || cfg.father_name || ""}`
@@ -138,24 +138,39 @@ export default function InvitationRenderer({ event, template, guest, preview = f
       data-testid="invitation-renderer"
     >
       {/* HERO */}
-      <section className="relative px-6 pt-12 pb-10 text-center overflow-hidden">
-        <div className="text-[10px] uppercase tracking-[0.4em]" style={{ color: accent }}>{heroLabel}</div>
-        <Ornament variant={ornamentVariant} color={accent} />
-        <h1
-          className="mt-3 leading-[1.0]"
-          style={{ fontFamily: `${theme.font_heading}, serif`, fontSize: preview ? "2.6rem" : "3.6rem", color: textColor }}
-        >
-          {heroTitle}
-        </h1>
-        {cfg.hashtag && (
-          <div className="mt-3 text-xs italic" style={{ color: mutedColor }}>{cfg.hashtag}</div>
+      <section
+        className="relative px-6 pt-12 pb-10 text-center overflow-hidden"
+        style={cfg.hero_bg ? {
+          backgroundImage: `url(${cfg.hero_bg})`,
+          backgroundSize: "cover",
+          backgroundPosition: cfg.hero_bg_position || "center",
+        } : {}}
+      >
+        {cfg.hero_bg && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: cfg.hero_overlay_color || (isDark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)"), opacity: (cfg.hero_overlay_opacity ?? 45) / 100 }}
+          />
         )}
-        <Ornament variant={ornamentVariant} color={accent} />
-        {targetDate && (
-          <div className="mt-3 text-sm" style={{ color: mutedColor, fontFamily: `${theme.font_heading}, serif`, fontSize: "1.1rem" }}>
-            {fmtDateID(cfg.events?.[0]?.date || cfg.event_date)}
-          </div>
-        )}
+        <div className="relative">
+          <div className="text-[10px] uppercase tracking-[0.4em]" style={{ color: cfg.hero_text_color || accent }}>{heroLabel}</div>
+          <Ornament variant={ornamentVariant} color={cfg.hero_text_color || accent} />
+          <h1
+            className="mt-3 leading-[1.0]"
+            style={{ fontFamily: `${theme.font_heading}, serif`, fontSize: preview ? "2.6rem" : "3.6rem", color: cfg.hero_text_color || textColor }}
+          >
+            {heroTitle}
+          </h1>
+          {cfg.hashtag && (
+            <div className="mt-3 text-xs italic" style={{ color: cfg.hero_text_color || mutedColor, opacity: 0.85 }}>{cfg.hashtag}</div>
+          )}
+          <Ornament variant={ornamentVariant} color={cfg.hero_text_color || accent} />
+          {targetDate && (
+            <div className="mt-3 text-sm" style={{ color: cfg.hero_text_color || mutedColor, fontFamily: `${theme.font_heading}, serif`, fontSize: "1.1rem", opacity: 0.9 }}>
+              {fmtDateID(cfg.events?.[0]?.date || cfg.event_date)}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* GUEST GREETING */}

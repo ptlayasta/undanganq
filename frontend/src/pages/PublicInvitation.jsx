@@ -104,12 +104,23 @@ export default function PublicInvitation() {
             exit={{ opacity: 0, scale: 1.05 }}
             transition={{ duration: 0.9 }}
             className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 text-center"
-            style={{ background: theme.bg, color: isDark ? "#f4ecdd" : "#2a2018" }}
+            style={{
+              background: cfg.hero_bg ? `url(${cfg.hero_bg}) center/cover` : theme.bg,
+              color: cfg.hero_text_color || (isDark ? "#f4ecdd" : "#2a2018"),
+            }}
             data-testid="cover-gate"
           >
+            {cfg.hero_bg && (
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: cfg.hero_overlay_color || "rgba(0,0,0,0.45)", opacity: (cfg.hero_overlay_opacity ?? 55) / 100 }}
+              />
+            )}
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url(https://katsudoto.id/media/template/exclusive/anselma/original/Orn-17.png)", backgroundSize: "180px", backgroundRepeat: "space" }} />
             <div className="relative">
-              <div className="text-[10px] uppercase tracking-[0.4em]" style={{ color: accent }}>The Wedding of</div>
+              <div className="text-[10px] uppercase tracking-[0.4em]" style={{ color: cfg.hero_text_color || accent }}>
+                {cfg.hero_label !== undefined && cfg.hero_label !== "" ? cfg.hero_label : "The Wedding of"}
+              </div>
               <motion.h1
                 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }}
                 className="mt-4"

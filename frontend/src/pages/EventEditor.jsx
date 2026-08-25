@@ -24,6 +24,7 @@ export default function EventEditor() {
   const musicRef = useRef();
   const bridePhotoRef = useRef();
   const groomPhotoRef = useRef();
+  const heroBgRef = useRef();
   const storyPhotoRef = useRef({});
 
   useEffect(() => { if (!loading && !user) navigate("/", { replace: true }); }, [loading, user, navigate]);
@@ -239,6 +240,81 @@ export default function EventEditor() {
                 )}
                 {!["wedding", "aqiqah", "khitanan", "birthday", "engagement", "graduation", "anniversary", "baby_shower", "syukuran", "corporate"].includes(eventType) && (
                   <div><Label>Nama Perayaan</Label><Input data-testid="input-celebrant" value={config.celebrant || ""} onChange={(e) => set("celebrant", e.target.value)} /></div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="hero" className="border rounded-xl px-4 bg-white">
+              <AccordionTrigger className="font-heading font-semibold">Sampul (Hero)</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div>
+                  <Label>Label Atas (contoh: &quot;The Wedding of&quot;, &quot;Khitanan&quot;, dsb)</Label>
+                  <Input
+                    data-testid="input-hero-label"
+                    value={config.hero_label ?? ""}
+                    onChange={(e) => set("hero_label", e.target.value)}
+                    placeholder="Kosongkan untuk pakai default sesuai jenis acara"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">Kosong = otomatis dari jenis acara.</p>
+                </div>
+                <div>
+                  <Label>Gambar Latar Belakang (opsional)</Label>
+                  <div className="mt-2 flex items-center gap-3">
+                    {config.hero_bg && <img src={config.hero_bg} alt="" className="w-16 h-16 rounded object-cover border" />}
+                    <input type="file" accept="image/*" hidden ref={heroBgRef} onChange={(e) => uploadTo(e.target.files?.[0], (url) => set("hero_bg", url))} />
+                    <button data-testid="btn-upload-hero-bg" onClick={() => heroBgRef.current?.click()} className="btn-ghost text-sm">
+                      {config.hero_bg ? "Ganti Gambar" : "Upload Gambar"}
+                    </button>
+                    {config.hero_bg && (
+                      <button data-testid="btn-remove-hero-bg" onClick={() => set("hero_bg", "")} className="text-xs text-red-500 hover:underline">
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Warna Tulisan Sampul</Label>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <input
+                        data-testid="input-hero-text-color"
+                        type="color"
+                        value={config.hero_text_color || "#ffffff"}
+                        onChange={(e) => set("hero_text_color", e.target.value)}
+                        className="w-10 h-10 rounded border cursor-pointer"
+                      />
+                      <Input
+                        value={config.hero_text_color || ""}
+                        onChange={(e) => set("hero_text_color", e.target.value)}
+                        placeholder="Otomatis"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Gelap Overlay ({config.hero_overlay_opacity ?? 45}%)</Label>
+                    <input
+                      data-testid="input-hero-overlay"
+                      type="range"
+                      min={0}
+                      max={90}
+                      step={5}
+                      value={config.hero_overlay_opacity ?? 45}
+                      onChange={(e) => set("hero_overlay_opacity", Number(e.target.value))}
+                      disabled={!config.hero_bg}
+                      className="w-full mt-3 accent-[#c05c46]"
+                    />
+                    <p className="text-xs text-neutral-500 mt-1">Hanya aktif jika ada gambar latar.</p>
+                  </div>
+                </div>
+                {config.hero_text_color && (
+                  <button
+                    data-testid="btn-reset-hero-color"
+                    onClick={() => set("hero_text_color", "")}
+                    className="text-xs text-neutral-500 hover:text-red-500"
+                  >
+                    Reset ke warna default template
+                  </button>
                 )}
               </AccordionContent>
             </AccordionItem>
