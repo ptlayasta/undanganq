@@ -15,8 +15,8 @@ export default function Header({ variant = "app" }) {
             u.
           </div>
           <div className="flex flex-col leading-none">
-            <span className="font-heading font-bold text-lg tracking-tight">Undangan</span>
-            <span className="overline mt-0.5">Digital · Indonesia</span>
+            <span className="font-heading font-bold text-lg tracking-tight">Undangan-Q</span>
+            <span className="overline mt-0.5">Bagikan Momen Bahagiamu</span>
           </div>
         </Link>
 

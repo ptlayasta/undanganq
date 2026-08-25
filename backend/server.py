@@ -299,7 +299,7 @@ TEMPLATES = [
 
     # === WISUDA (Graduation) ===
     {"template_id": "graduation-honor", "name": "Graduation Honor", "category": "graduation", "tier": "free",
-     "cover": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=85",
+     "cover": "https://unsplash.com/photos/graduates-in-caps-and-gowns-tossing-hats-in-the-air-w-T1VDxb6io",
      "theme": {"primary": "#1a3a5f", "accent": "#d4af37", "bg": "#f5f7fb", "font_heading": "Cormorant Garamond", "ornament": "geometric"}},
 
     # === ANNIVERSARY ===
